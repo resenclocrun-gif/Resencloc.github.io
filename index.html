@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JW Player - Reproductor con Memoria</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #5c8fc2;
+            --secondary: #3a6ea5;
+            --dark: #1a2a3a;
+            --light: #ffffff;
+            --gray: #2c3e50;
+            --light-gray: #bdc3c7;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--dark), #2c3e50);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        header {
+            background: rgba(26, 42, 58, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--light);
+        }
+        
+        .logo i {
+            color: var(--primary);
+        }
+        
+        .player-section {
+            background: rgba(30, 40, 50, 0.8);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--gray);
+        }
+        
+        .playlist-section {
+            background: rgba(30, 40, 50, 0.8);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--gray);
+            height: fit-content;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: var(--light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .section-title i {
+            color: var(--primary);
+        }
+        
+        #video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            background: #000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        #video-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 12px;
+        }
+        
+        .video-info {
+            padding: 15px 0;
+        }
+        
+        .video-info h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--light);
+        }
+        
+        .video-info p {
+            color: var(--light-gray);
+            font-size: 0.9rem;
+        }
+        
+        .player-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(44, 62, 80, 0.6);
+            border-radius: 12px;
+        }
+        
+        .player-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .player-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(92, 143, 194, 0.4);
+        }
+        
+        .player-btn:disabled {
+            background: var(--gray);
+            color: var(--light-gray);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .add-video-form {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        
+        #video-url {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: rgba(44, 62, 80, 0.7);
+            color: white;
+            border: 1px solid var(--gray);
+        }
+        
+        #video-url:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        #add-video-btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        #add-video-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(92, 143, 194, 0.4);
+        }
+        
+        #playlist {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 5px;
+            margin-bottom: 20px;
+        }
+        
+        #playlist::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #playlist::-webkit-scrollbar-track {
+            background: rgba(44, 62, 80, 0.5);
+            border-radius: 3px;
+        }
+        
+        #playlist::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+        
+        .playlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(44, 62, 80, 0.6);
+            border-radius: 10px;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+        
+        .playlist-item:hover {
+            background: rgba(44, 62, 80, 0.8);
+            transform: translateX(5px);
+        }
+        
+        .playlist-item.active {
+            background: rgba(58, 110, 165, 0.3);
+            border-left: 3px solid var(--secondary);
+        }
+        
+        .video-info-small {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .video-title {
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+            color: var(--light);
+        }
+        
+        .video-id {
+            font-size: 0.8rem;
+            color: var(--light-gray);
+        }
+        
+        .playlist-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            background: none;
+            border: none;
+            color: var(--light-gray);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-btn:hover {
+            color: var(--light);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .play-btn:hover {
+            color: var(--primary);
+        }
+        
+        .delete-btn:hover {
+            color: #e74c3c;
+        }
+        
+        .empty-playlist {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--light-gray);
+            font-style: italic;
+        }
+        
+        .empty-playlist i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--gray);
+        }
+        
+        .memory-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .memory-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(44, 62, 80, 0.7);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .memory-btn:hover {
+            background: rgba(44, 62, 80, 0.9);
+            transform: translateY(-2px);
+        }
+        
+        #save-btn {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+        }
+        
+        #clear-btn {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+        }
+        
+        .status-message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            display: none;
+            font-size: 0.9rem;
+        }
+        
+        .status-message.success {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            display: block;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+        
+        .status-message.error {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            display: block;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+        
+        .now-playing {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(44, 62, 80, 0.6);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .now-playing i {
+            color: var(--primary);
+        }
+        
+        .instructions {
+            background: rgba(44, 62, 80, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .instructions h4 {
+            margin-bottom: 10px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            color: var(--light-gray);
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        @media (max-width: 1100px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .playlist-section {
+                max-height: none;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .player-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .player-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .add-video-form {
+                flex-direction: column;
+            }
+            
+            .memory-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-play-circle"></i>
+            <span>JW Player</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="player-section">
+            <h2 class="section-title">
+                <i class="fas fa-play"></i>
+                Reproductor
+            </h2>
+            
+            <div id="video-container">
+                <iframe id="video-player" width="560" height="315" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            
+            <div class="video-info">
+                <h3 id="video-title">Selecciona un video de la lista</h3>
+                <p id="video-description">Los videos que agregues aparecerán aquí</p>
+            </div>
+            
+            <div class="player-controls">
+                <button id="prev-btn" class="player-btn" disabled>
+                    <i class="fas fa-arrow-left"></i>
+                    Anterior
+                </button>
+                <button id="next-btn" class="player-btn" disabled>
+                    Siguiente
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+            
+            <div class="now-playing">
+                <i class="fas fa-info-circle"></i>
+                <span id="now-playing-text">No se está reproduciendo ningún video</span>
+            </div>
+        </div>
+        
+        <div class="playlist-section">
+            <h2 class="section-title">
+                <i class="fas fa-list"></i>
+                Lista de Reproducción
+            </h2>
+            
+            <div class="add-video-form">
+                <input type="text" id="video-url" placeholder="Pega el enlace de JW.org aquí...">
+                <button id="add-video-btn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div id="status-message" class="status-message"></div>
+            
+            <ul id="playlist">
+                <li class="empty-playlist">
+                    <i class="fas fa-film"></i>
+                    <p>La lista de reproducción está vacía</p>
+                    <p>Agrega algunos videos para comenzar</p>
+                </li>
+            </ul>
+            
+            <div class="memory-buttons">
+                <button id="save-btn" class="memory-btn">
+                    <i class="fas fa-save"></i>
+                    Guardar Lista
+                </button>
+                <button id="clear-btn" class="memory-btn">
+                    <i class="fas fa-trash"></i>
+                    Limpiar Lista
+                </button>
+            </div>
+            
+            <div class="instructions">
+                <h4><i class="fas fa-info-circle"></i> Cómo usar este reproductor:</h4>
+                <ul>
+                    <li>Busca videos en <a href="https://www.jw.org" style="color:var(--primary);" target="_blank">JW.org</a></li>
+                    <li>Copia la URL del video y pégala arriba</li>
+                    <li>Los videos se guardarán localmente en tu navegador</li>
+                    <li>Puedes navegar entre videos con los botones de anterior/siguiente</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos del DOM
+            const videoPlayer = document.getElementById('video-player');
+            const videoUrlInput = document.getElementById('video-url');
+            const addVideoBtn = document.getElementById('add-video-btn');
+            const playlistElement = document.getElementById('playlist');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const saveBtn = document.getElementById('save-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const statusMessage = document.getElementById('status-message');
+            const videoTitle = document.getElementById('video-title');
+            const videoDescription = document.getElementById('video-description');
+            const nowPlayingText = document.getElementById('now-playing-text');
+            
+            // Variables de estado
+            let playlist = [];
+            let currentVideoIndex = -1;
+            
+            // Cargar lista desde localStorage al iniciar
+            loadPlaylist();
+            
+            // Event Listeners
+            addVideoBtn.addEventListener('click', addVideoFromInput);
+            videoUrlInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addVideoFromInput();
+                }
+            });
+            
+            prevBtn.addEventListener('click', playPreviousVideo);
+            nextBtn.addEventListener('click', playNextVideo);
+            saveBtn.addEventListener('click', savePlaylistToStorage);
+            clearBtn.addEventListener('click', clearPlaylist);
+            
+            // Función para mostrar mensajes de estado
+            function showStatusMessage(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status-message ' + type;
+                
+                // Ocultar mensaje después de 3 segundos
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
+            }
+            
+            // Función para agregar video desde el input
+            function addVideoFromInput() {
+                const url = videoUrlInput.value.trim();
+                if (!url) {
+                    showStatusMessage('Por favor, ingresa un enlace de JW.org', 'error');
+                    return;
+                }
+                
+                // Extraer información del video desde la URL de JW.org
+                const videoInfo = extractJWorgInfo(url);
+                if (!videoInfo || !videoInfo.id) {
+                    showStatusMessage('Por favor, ingresa un enlace válido de JW.org', 'error');
+                    return;
+                }
+                
+                addVideoToPlaylist(videoInfo.id, videoInfo.title || `Video JW.org (${videoInfo.id})`);
+                
+                // Limpiar el input
+                videoUrlInput.value = '';
+                
+                showStatusMessage('Video agregado correctamente', 'success');
+            }
+            
+            // Función para extraer información de URLs de JW.org
+            function extractJWorgInfo(url) {
+                try {
+                    const urlObj = new URL(url);
+                    const params = new URLSearchParams(urlObj.search);
+                    
+                    // Para enlaces de finder como: https://www.jw.org/finder?srcid=share&wtlocale=S&lank=pub-jwb-125_4_VIDEO
+                    if (urlObj.hostname.includes('jw.org') && urlObj.pathname.includes('/finder')) {
+                        const lankParam = params.get('lank');
+                        if (lankParam && lankParam.startsWith('pub-')) {
+                            return {
+                                id: lankParam,
+                                title: `Video: ${lankParam.split('-').slice(1).join(' ')}`
+                            };
+                        }
+                    }
+                    
+                    // Para enlaces directos a publicaciones
+                    if (urlObj.hostname.includes('jw.org') && urlObj.pathname.includes('/pub-')) {
+                        const pathParts = urlObj.pathname.split('/');
+                        const pubId = pathParts.find(part => part.startsWith('pub-'));
+                        if (pubId) {
+                            return {
+                                id: pubId,
+                                title: `Video: ${pubId.split('-').slice(1).join(' ')}`
+                            };
+                        }
+                    }
+                    
+                    return null;
+                } catch (e) {
+                    console.error('Error parsing URL:', e);
+                    return null;
+                }
+            }
+            
+            // Función para agregar video a la lista de reproducción
+            function addVideoToPlaylist(videoId, title) {
+                // Verificar si el video ya existe en la lista
+                if (playlist.some(video => video.videoId === videoId)) {
+                    showStatusMessage('Este video ya está en la lista', 'error');
+                    return;
+                }
+                
+                playlist.push({ videoId, title });
+                renderPlaylist();
+                
+                // Si es el primer video, reproducirlo
+                if (playlist.length === 1) {
+                    currentVideoIndex = 0;
+                    playVideo(currentVideoIndex);
+                }
+                
+                updateControlButtons();
+            }
+            
+            // Función para reproducir un video
+            function playVideo(index) {
+                if (index < 0 || index >= playlist.length) return;
+                
+                currentVideoIndex = index;
+                const videoId = playlist[index].videoId;
+                
+                // Construir URL de JW.org para el reproductor
+                // Nota: JW.org no permite embeber videos directamente, 
+                // así que usamos una página intermedia o alternativa
+                videoPlayer.src = `https://www.jw.org/finder?srcid=share&wtlocale=S&lank=${videoId}`;
+                
+                // Actualizar la información del video
+                videoTitle.textContent = playlist[index].title;
+                videoDescription.textContent = `ID: ${videoId}`;
+                nowPlayingText.textContent = `Reproduciendo: ${playlist[index].title}`;
+                
+                // Actualizar la lista para resaltar el video actual
+                renderPlaylist();
+                updateControlButtons();
+            }
+            
+            // Función para reproducir el video anterior
+            function playPreviousVideo() {
+                if (currentVideoIndex <= 0) return;
+                playVideo(currentVideoIndex - 1);
+            }
+            
+            // Función para reproducir el siguiente video
+            function playNextVideo() {
+                if (currentVideoIndex >= playlist.length - 1) return;
+                playVideo(currentVideoIndex + 1);
+            }
+            
+            // Función para renderizar la lista de reproducción
+            function renderPlaylist() {
+                // Limpiar la lista
+                playlistElement.innerHTML = '';
+                
+                if (playlist.length === 0) {
+                    playlistElement.innerHTML = `
+                        <li class="empty-playlist">
+                            <i class="fas fa-film"></i>
+                            <p>La lista de reproducción está vacía</p>
+                            <p>Agrega algunos videos para comenzar</p>
+                        </li>
+                    `;
+                    return;
+                }
+                
+                // Agregar cada video a la lista
+                playlist.forEach((video, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'playlist-item';
+                    if (index === currentVideoIndex) {
+                        li.classList.add('active');
+                    }
+                    
+                    li.innerHTML = `
+                        <div class="video-info-small">
+                            <div class="video-title">${video.title}</div>
+                            <div class="video-id">ID: ${video.videoId}</div>
+                        </div>
+                        <div class="playlist-controls">
+                            <button class="control-btn play-btn" data-index="${index}">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="control-btn delete-btn" data-index="${index}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    playlistElement.appendChild(li);
+                });
+                
+                // Agregar event listeners a los botones de la lista
+                document.querySelectorAll('.play-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        playVideo(index);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        deleteVideo(index);
+                    });
+                });
+            }
+            
+            // Función para eliminar un video de la lista
+            function deleteVideo(index) {
+                playlist.splice(index, 1);
+                
+                // Ajustar el índice actual si es necesario
+                if (currentVideoIndex >= index) {
+                    currentVideoIndex--;
+                }
+                
+                // Si eliminamos el video actual, reproducir el siguiente o detener
+                if (index === currentVideoIndex) {
+                    if (playlist.length > 0) {
+                        playVideo(Math.min(currentVideoIndex, playlist.length - 1));
+                    } else {
+                        currentVideoIndex = -1;
+                        videoPlayer.src = '';
+                        videoTitle.textContent = 'Selecciona un video de la lista';
+                        videoDescription.textContent = 'Los videos que agregues aparecerán aquí';
+                        nowPlayingText.textContent = 'No se está reproduciendo ningún video';
+                    }
+                }
+                
+                renderPlaylist();
+                updateControlButtons();
+                showStatusMessage('Video eliminado de la lista', 'success');
+            }
+            
+            // Función para actualizar el estado de los botones de control
+            function updateControlButtons() {
+                prevBtn.disabled = currentVideoIndex <= 0;
+                nextBtn.disabled = currentVideoIndex >= playlist.length - 1;
+            }
+            
+            // Función para guardar la lista en localStorage
+            function savePlaylistToStorage() {
+                try {
+                    localStorage.setItem('jwPlaylist', JSON.stringify(playlist));
+                    showStatusMessage('Lista guardada correctamente en el almacenamiento local', 'success');
+                } catch (e) {
+                    showStatusMessage('Error al guardar la lista: ' + e.message, 'error');
+                }
+            }
+            
+            // Función para cargar la lista desde localStorage
+            function loadPlaylist() {
+                try {
+                    const savedPlaylist = localStorage.getItem('jwPlaylist');
+                    if (savedPlaylist) {
+                        playlist = JSON.parse(savedPlaylist);
+                        renderPlaylist();
+                        updateControlButtons();
+                        
+                        // Reproducir el último video visto si existe
+                        if (playlist.length > 0) {
+                            const lastVideoIndex = localStorage.getItem('lastJWVideoIndex');
+                            if (lastVideoIndex !== null) {
+                                playVideo(parseInt(lastVideoIndex));
+                            }
+                        }
+                    }
+                } catch (e) {
+                    showStatusMessage('Error al cargar la lista: ' + e.message, 'error');
+                }
+            }
+            
+            // Función para limpiar la lista
+            function clearPlaylist() {
+                if (confirm('¿Estás seguro de que quieres limpiar la lista de reproducción?')) {
+                    playlist = [];
+                    currentVideoIndex = -1;
+                    videoPlayer.src = '';
+                    renderPlaylist();
+                    updateControlButtons();
+                    
+                    try {
+                        localStorage.removeItem('jwPlaylist');
+                        localStorage.removeItem('lastJWVideoIndex');
+                        showStatusMessage('Lista limpiada correctamente', 'success');
+                        
+                        // Restablecer la información del video
+                        videoTitle.textContent = 'Selecciona un video de la lista';
+                        videoDescription.textContent = 'Los videos que agregues aparecerán aquí';
+                        nowPlayingText.textContent = 'No se está reproduciendo ningún video';
+                    } catch (e) {
+                        showStatusMessage('Error al limpiar la lista: ' + e.message, 'error');
+                    }
+                }
+            }
+            
+            // Guardar el índice del video actual antes de cerrar la página
+            window.addEventListener('beforeunload', function() {
+                if (currentVideoIndex >= 0) {
+                    localStorage.setItem('lastJWVideoIndex', currentVideoIndex);
+                }
+            });
+            
+            // Ejemplo de videos predefinidos
+            const exampleVideos = [
+                {
+                    videoId: "pub-jwb-125_4_VIDEO",
+                    title: "¿Por qué bautizó Jesús a sus discípulos?"
+                }
+            ];
+            
+            // Agregar videos de ejemplo si la lista está vacía
+            if (playlist.length === 0) {
+                exampleVideos.forEach(video => {
+                    addVideoToPlaylist(video.videoId, video.title);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
